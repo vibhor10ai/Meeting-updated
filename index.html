@@ -1,0 +1,955 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, maximum-scale=1, user-scalable=no">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black">
+<meta name="apple-mobile-web-app-title" content="Meetings">
+<meta name="theme-color" content="#000000">
+
+
+<title>Meetings</title>
+<style>
+  :root{
+    --bg:#000;--surface:#1C1C1E;--surface-2:#2C2C2E;--surface-3:#3A3A3C;--sep:rgba(84,84,88,.6);
+    --label:#fff;--label-2:rgba(235,235,245,.62);--label-3:rgba(235,235,245,.32);
+    --blue:#0A84FF;--red:#FF453A;--orange:#FF9F0A;--yellow:#FFD60A;--green:#30D158;--purple:#BF5AF2;
+    --safe-t:env(safe-area-inset-top);--safe-b:env(safe-area-inset-bottom);
+  }
+  *{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+  html,body{margin:0;height:100%}
+  body{background:var(--bg);color:var(--label);
+    font-family:-apple-system,BlinkMacSystemFont,"SF Pro Text","SF Pro Display","Helvetica Neue",Inter,system-ui,sans-serif;
+    font-size:17px;line-height:1.35;letter-spacing:-.01em;overscroll-behavior-y:none}
+  button{font:inherit;color:inherit;background:none;border:0;padding:0;cursor:pointer}
+  input,select,textarea{font:inherit;color:inherit}
+  .app{max-width:520px;margin:0 auto;padding:calc(var(--safe-t) + 8px) 0 calc(var(--safe-b) + 104px)}
+
+  header{padding:6px 20px 12px;display:flex;align-items:flex-start;gap:12px}
+  .eyebrow{font-size:13px;font-weight:600;letter-spacing:.06em;text-transform:uppercase;color:var(--label-3)}
+  .title{font-size:34px;font-weight:700;letter-spacing:-.6px;margin:2px 0 0}
+  .sub{color:var(--label-2);font-size:15px;margin-top:2px}
+  .gear{width:34px;height:34px;border-radius:50%;background:var(--surface);display:grid;place-items:center;
+    font-size:15px;flex:none;margin-top:16px}
+
+  .perm{display:flex;gap:12px;align-items:center;margin:0 20px 14px;padding:12px 14px;
+    background:var(--surface);border-radius:16px;font-size:14px;color:var(--label-2)}
+  .perm b{color:var(--label);font-weight:600;display:block;font-size:15px;margin-bottom:1px}
+  .perm button{color:var(--blue);font-weight:600;font-size:15px;white-space:nowrap}
+
+  /* next up */
+  .next{margin:0 20px 22px;padding:18px;border-radius:22px;position:relative;overflow:hidden;
+    background:linear-gradient(160deg,var(--surface-2),var(--surface));border:.5px solid rgba(255,255,255,.08)}
+  .next .glow{position:absolute;inset:-40% -10% auto;height:180px;filter:blur(48px);opacity:.35;pointer-events:none}
+  .next-row{display:flex;align-items:center;gap:16px;position:relative}
+  .ring{width:78px;height:78px;flex:none;position:relative}
+  .ring svg{transform:rotate(-90deg);display:block}
+  .ring .cd{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;font-variant-numeric:tabular-nums}
+  .ring .cd b{font-size:19px;font-weight:700;letter-spacing:-.5px}
+  .ring .cd span{font-size:9px;letter-spacing:.08em;color:var(--label-3);text-transform:uppercase}
+  .next h2{margin:0;font-size:19px;font-weight:600;letter-spacing:-.3px}
+  .next .when{color:var(--label-2);font-size:14px;margin-top:3px}
+  .next .alertline{margin-top:12px;padding-top:11px;border-top:.5px solid var(--sep);
+    font-size:13px;color:var(--label-2);display:flex;align-items:center;gap:7px;position:relative}
+  .dot{width:6px;height:6px;border-radius:50%;background:var(--blue);flex:none}
+  .dot.live{animation:pulse 1.8s ease-in-out infinite}
+  @keyframes pulse{0%,100%{opacity:1}50%{opacity:.25}}
+
+  .strip{display:flex;gap:8px;overflow-x:auto;padding:0 20px 4px;scrollbar-width:none;scroll-snap-type:x mandatory}
+  .strip::-webkit-scrollbar{display:none}
+  .day{flex:none;width:52px;padding:9px 0 10px;border-radius:16px;text-align:center;background:var(--surface);scroll-snap-align:center}
+  .day span{display:block;font-size:11px;font-weight:600;letter-spacing:.05em;color:var(--label-3);text-transform:uppercase}
+  .day b{display:block;font-size:19px;font-weight:600;margin-top:3px;font-variant-numeric:tabular-nums}
+  .day.sel{background:#fff;color:#000}
+  .day.sel span{color:rgba(0,0,0,.45)}
+  .day .pips{display:flex;gap:3px;justify-content:center;margin-top:5px;height:4px}
+  .day .pips i{width:4px;height:4px;border-radius:50%}
+
+  .listhead{display:flex;align-items:baseline;justify-content:space-between;padding:24px 20px 10px}
+  .listhead h3{margin:0;font-size:22px;font-weight:700;letter-spacing:-.4px}
+  .listhead em{font-style:normal;color:var(--label-3);font-size:13px;font-weight:600}
+  .rows{margin:0 20px;background:var(--surface);border-radius:18px;overflow:hidden}
+  .row{display:flex;gap:14px;padding:14px 15px;position:relative;width:100%;text-align:left;align-items:flex-start}
+  .row + .row::before{content:"";position:absolute;left:76px;right:0;top:0;height:.5px;background:var(--sep)}
+  .row .time{width:58px;flex:none;font-variant-numeric:tabular-nums;font-size:15px;font-weight:600;letter-spacing:-.2px}
+  .row .time small{display:block;font-size:12px;font-weight:500;color:var(--label-3);margin-top:1px}
+  .bar{width:4px;border-radius:2px;flex:none;align-self:stretch;min-height:34px}
+  .row .body{flex:1;min-width:0}
+  .row .body h4{margin:0;font-size:16px;font-weight:600;letter-spacing:-.2px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  .row .meta{color:var(--label-2);font-size:13px;margin-top:2px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  .tags{display:flex;gap:6px;margin-top:8px;flex-wrap:wrap}
+  .tag{font-size:11px;font-weight:600;padding:3px 8px;border-radius:20px;background:var(--surface-3);color:var(--label-2)}
+  .tag.crit{background:rgba(255,69,58,.16);color:#FF6961}
+  .tag.pri{color:#000}
+  .tag.mic{background:rgba(191,90,242,.18);color:#D9A0F7}
+  .row.past{opacity:.42}
+  .chev{color:var(--label-3);font-size:14px;align-self:center}
+  .empty{margin:0 20px;padding:44px 24px;text-align:center;background:var(--surface);border-radius:18px}
+  .empty p{margin:0;color:var(--label-2);font-size:15px}
+  .empty b{display:block;color:var(--label);font-size:17px;font-weight:600;margin-bottom:5px}
+
+  /* dock */
+  .dock{position:fixed;left:50%;transform:translateX(-50%);bottom:calc(var(--safe-b) + 20px);z-index:40;display:flex;gap:10px;align-items:center}
+  .dock .add{background:var(--blue);color:#fff;font-size:16px;font-weight:600;padding:15px 24px;border-radius:30px;
+    box-shadow:0 10px 34px rgba(10,132,255,.4)}
+  .dock .mic{width:54px;height:54px;border-radius:50%;background:var(--purple);display:grid;place-items:center;
+    box-shadow:0 10px 34px rgba(191,90,242,.4)}
+  .dock button:active{transform:scale(.95)}
+  .mic svg{width:22px;height:22px;fill:#fff}
+
+  /* sheets */
+  .scrim{position:fixed;inset:0;background:rgba(0,0,0,.55);backdrop-filter:blur(3px);z-index:50;opacity:0;pointer-events:none;transition:opacity .28s}
+  .scrim.on{opacity:1;pointer-events:auto}
+  .sheet{position:fixed;left:0;right:0;bottom:0;z-index:60;max-height:92vh;overflow-y:auto;background:#1C1C1E;
+    border-radius:14px 14px 0 0;padding:10px 20px calc(var(--safe-b) + 26px);transform:translateY(102%);
+    transition:transform .34s cubic-bezier(.32,.72,0,1);max-width:520px;margin:0 auto}
+  .sheet.on{transform:translateY(0)}
+  .grab{width:36px;height:5px;border-radius:3px;background:var(--surface-3);margin:0 auto 14px}
+  .sheet h3{margin:0 0 18px;font-size:22px;font-weight:700;letter-spacing:-.4px;text-align:center}
+  .field{margin-bottom:14px}
+  .field label{display:block;font-size:12px;font-weight:600;letter-spacing:.06em;text-transform:uppercase;color:var(--label-3);margin-bottom:7px}
+  .field input,.field textarea,.field select{width:100%;background:var(--surface-2);border:0;border-radius:12px;padding:13px 14px;font-size:16px;-webkit-appearance:none;appearance:none}
+  .field textarea{resize:none;min-height:64px}
+  .two{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+  .seg{display:flex;gap:6px}
+  .seg button{flex:1;padding:11px 4px;border-radius:11px;background:var(--surface-2);font-size:13px;font-weight:600;
+    display:flex;flex-direction:column;align-items:center;gap:5px;transition:.15s}
+  .seg button i{width:9px;height:9px;border-radius:50%;display:block}
+  .seg button.on{background:#fff;color:#000}
+  .seg.crit button.on{background:var(--surface-3);color:#fff;box-shadow:inset 0 0 0 1.5px currentColor}
+  .hint{font-size:12.5px;color:var(--label-3);margin:-6px 0 16px;line-height:1.45}
+  .primary{width:100%;background:var(--blue);color:#fff;font-weight:600;padding:16px;border-radius:14px;font-size:17px;margin-top:6px}
+  .primary.purple{background:var(--purple)}
+  .ghost{width:100%;padding:15px;border-radius:14px;font-size:17px;color:var(--label-2);margin-top:8px}
+  .danger{color:var(--red);font-weight:600}
+  .dt-hero{text-align:center;padding:4px 0 18px}
+  .dt-hero h3{margin:0 0 4px}
+  .dt-hero p{margin:0;color:var(--label-2);font-size:15px}
+  .kv{background:var(--surface-2);border-radius:14px;overflow:hidden;margin-bottom:14px}
+  .kv div{display:flex;justify-content:space-between;gap:16px;padding:13px 15px;font-size:15px;position:relative}
+  .kv div + div::before{content:"";position:absolute;left:15px;right:0;top:0;height:.5px;background:var(--sep)}
+  .kv span{color:var(--label-2)}
+  .kv b{font-weight:600;text-align:right}
+  .switch{display:flex;justify-content:space-between;align-items:center;padding:13px 15px;background:var(--surface-2);border-radius:14px;margin-bottom:10px;gap:14px}
+  .switch small{display:block;color:var(--label-2);font-size:13px;font-weight:400;margin-top:2px}
+  .switch b{font-size:15px;font-weight:600}
+  .pillbtn{background:var(--surface-3);padding:8px 14px;border-radius:20px;font-size:14px;font-weight:600;white-space:nowrap}
+  .pillbtn.on{background:var(--green);color:#000}
+
+  /* voice overlay */
+  .voice{position:fixed;inset:0;z-index:80;background:rgba(0,0,0,.82);backdrop-filter:blur(28px);
+    display:flex;flex-direction:column;justify-content:flex-end;padding:24px 20px calc(var(--safe-b) + 26px);
+    opacity:0;pointer-events:none;transition:opacity .25s}
+  .voice.on{opacity:1;pointer-events:auto}
+  .voice .transcript{font-size:26px;font-weight:600;letter-spacing:-.5px;line-height:1.25;margin-bottom:20px;min-height:70px}
+  .voice .transcript i{font-style:normal;color:var(--label-3)}
+  .voice .status{font-size:13px;font-weight:600;letter-spacing:.06em;text-transform:uppercase;color:var(--purple);margin-bottom:8px}
+  .wave{display:flex;gap:5px;align-items:flex-end;height:44px;margin-bottom:22px}
+  .wave i{width:5px;border-radius:3px;background:linear-gradient(180deg,var(--purple),var(--blue));height:8px;transition:height .12s linear}
+  .preview{background:var(--surface);border-radius:18px;padding:16px;margin-bottom:16px}
+  .preview h4{margin:0 0 3px;font-size:18px;font-weight:600}
+  .preview p{margin:0;color:var(--label-2);font-size:14px}
+  .preview .tags{margin-top:10px}
+  .voice .actions{display:flex;gap:10px}
+  .voice .actions button{flex:1;padding:16px;border-radius:14px;font-size:16px;font-weight:600}
+  .voice .cancel{background:var(--surface-2);color:var(--label-2)}
+  .voice .confirm{background:var(--purple);color:#fff}
+  .voice .fallback{width:100%;background:var(--surface-2);border-radius:12px;padding:14px;font-size:16px;margin-bottom:14px}
+  .examples{font-size:13px;color:var(--label-3);line-height:1.6;margin-bottom:18px}
+  .examples b{color:var(--label-2);font-weight:600;display:block;margin-bottom:4px}
+
+  .toast{position:fixed;top:calc(var(--safe-t) + 10px);left:12px;right:12px;max-width:496px;margin:0 auto;z-index:90;
+    background:rgba(58,58,60,.82);backdrop-filter:blur(22px) saturate(180%);border-radius:20px;padding:13px 15px;
+    display:flex;gap:12px;align-items:flex-start;box-shadow:0 14px 40px rgba(0,0,0,.55);
+    transform:translateY(-160%);transition:transform .42s cubic-bezier(.32,.72,0,1)}
+  .toast.on{transform:translateY(0)}
+  .toast .ic{width:34px;height:34px;border-radius:9px;flex:none;display:grid;place-items:center;font-size:17px;background:var(--blue)}
+  .toast .tx{flex:1;min-width:0}
+  .toast .tx b{display:block;font-size:14px;font-weight:600}
+  .toast .tx p{margin:1px 0 0;font-size:14px;color:rgba(255,255,255,.86);line-height:1.3}
+  .toast .tx small{font-size:12px;color:rgba(255,255,255,.5)}
+  @media (prefers-reduced-motion:reduce){*{transition:none!important;animation:none!important}}
+  :focus-visible{outline:2px solid var(--blue);outline-offset:2px}
+</style>
+</head>
+<body>
+<div class="app">
+  <header>
+    <div style="flex:1">
+      <div class="eyebrow" id="eyebrow">Loading</div>
+      <h1 class="title" id="dayTitle">Today</h1>
+      <div class="sub" id="daySub"></div>
+    </div>
+    <button class="gear" id="gear" aria-label="Settings">⚙︎</button>
+  </header>
+
+  <div class="perm" id="perm" hidden>
+    <div style="flex:1"><b id="permTitle">Turn on alerts</b><span id="permBody">Get a heads-up 10 and 5 minutes before every meeting.</span></div>
+    <button id="permBtn">Turn on</button>
+  </div>
+
+  <div id="nextWrap"></div>
+  <div class="strip" id="strip"></div>
+  <div class="listhead"><h3 id="listTitle">Schedule</h3><em id="listCount"></em></div>
+  <div id="list"></div>
+</div>
+
+<div class="dock">
+  <button class="add" id="fab">＋ New meeting</button>
+  <button class="mic" id="micBtn" aria-label="Add by voice">
+    <svg viewBox="0 0 24 24"><path d="M12 15a3 3 0 0 0 3-3V6a3 3 0 1 0-6 0v6a3 3 0 0 0 3 3z"/><path d="M18 11a1 1 0 1 0-2 0 4 4 0 0 1-8 0 1 1 0 1 0-2 0 6 6 0 0 0 5 5.91V19H9a1 1 0 1 0 0 2h6a1 1 0 1 0 0-2h-2v-2.09A6 6 0 0 0 18 11z"/></svg>
+  </button>
+</div>
+
+<div class="scrim" id="scrim"></div>
+
+<div class="sheet" id="sheet">
+  <div class="grab"></div>
+  <h3 id="sheetTitle">New meeting</h3>
+  <div class="field"><label>Meeting</label><input id="f-title" placeholder="Weekly business review" autocomplete="off"></div>
+  <div class="two">
+    <div class="field"><label>Date</label><input id="f-date" type="date"></div>
+    <div class="field"><label>Start</label><input id="f-time" type="time"></div>
+  </div>
+  <div class="two">
+    <div class="field"><label>Runs for</label>
+      <select id="f-dur"><option value="15">15 min</option><option value="30" selected>30 min</option>
+      <option value="45">45 min</option><option value="60">1 hour</option><option value="90">1.5 hours</option><option value="120">2 hours</option></select>
+    </div>
+    <div class="field"><label>Where</label><input id="f-loc" placeholder="Zoom / Room 4" autocomplete="off"></div>
+  </div>
+  <div class="field"><label>Priority</label>
+    <div class="seg" id="seg-pri">
+      <button data-v="1"><i style="background:var(--red)"></i>P1</button>
+      <button data-v="2"><i style="background:var(--orange)"></i>P2</button>
+      <button data-v="3" class="on"><i style="background:var(--yellow)"></i>P3</button>
+      <button data-v="4"><i style="background:var(--green)"></i>P4</button>
+    </div>
+  </div>
+  <p class="hint">Priority sets the colour you'll see on the timeline. P1 is red, P4 is green.</p>
+  <div class="field"><label>Criticality</label>
+    <div class="seg crit" id="seg-crit">
+      <button data-v="optional">Optional</button><button data-v="standard" class="on">Standard</button>
+      <button data-v="important">Important</button><button data-v="critical">Critical</button>
+    </div>
+  </div>
+  <p class="hint" id="critHint">Every meeting alerts at 10 and 5 minutes. Critical ones add a 30-minute warning and a nudge at start time.</p>
+  <div class="field"><label>Notes</label><textarea id="f-notes" placeholder="Agenda, dial-in, what you need to prepare"></textarea></div>
+  <button class="primary" id="save">Save meeting</button>
+  <button class="ghost" id="cancel">Cancel</button>
+</div>
+
+<div class="sheet" id="detail">
+  <div class="grab"></div>
+  <div class="dt-hero"><h3 id="d-title"></h3><p id="d-when"></p></div>
+  <div class="kv" id="d-kv"></div>
+  <div class="kv" id="d-notes-wrap" hidden><div style="display:block"><span id="d-notes" style="color:var(--label)"></span></div></div>
+  <button class="primary" id="d-edit">Edit meeting</button>
+  <button class="ghost danger" id="d-del">Delete meeting</button>
+  <button class="ghost" id="d-close">Close</button>
+</div>
+
+<div class="sheet" id="settings">
+  <div class="grab"></div>
+  <h3>Settings</h3>
+  <div class="switch">
+    <div><b>Alerts on this device</b><small id="s-perm">Not set up yet</small></div>
+    <button class="pillbtn" id="s-permBtn">Turn on</button>
+  </div>
+  <div class="switch">
+    <div><b>Alerts when the app is closed</b><small id="s-push">Needs the push server below</small></div>
+    <button class="pillbtn" id="s-pushBtn">Connect</button>
+  </div>
+  <div class="switch">
+    <div><b>Speak replies</b><small>Read answers aloud after a voice command</small></div>
+    <button class="pillbtn" id="s-speakBtn">Off</button>
+  </div>
+  <div class="field" style="margin-top:16px"><label>Push server address</label><input id="s-url" placeholder="https://meetings.yourdomain.com" autocomplete="off" inputmode="url"></div>
+  <div class="field"><label>Access token</label><input id="s-token" placeholder="The APP_TOKEN you set on the server" autocomplete="off"></div>
+  <button class="primary" id="s-save">Save and connect</button>
+  <button class="ghost" id="s-test">Send a test alert</button>
+  <button class="ghost" id="s-close">Close</button>
+  <p class="hint" style="margin-top:14px" id="s-status"></p>
+</div>
+
+<div class="voice" id="voice">
+  <div class="status" id="v-status">Listening</div>
+  <div class="wave" id="wave"></div>
+  <div class="transcript" id="v-text"><i>Say something like “meeting with finance tomorrow at 3 pm, priority 1, critical”</i></div>
+  <input class="fallback" id="v-typed" placeholder="Or type the command" hidden autocomplete="off">
+  <div class="examples" id="v-examples">
+    <b>Try</b>
+    “Schedule a design review Monday at 10:30 for an hour, high priority”<br>
+    “Book a sync with Priya in 30 minutes, critical, on Zoom”<br>
+    “What's on today?”
+  </div>
+  <div id="v-preview"></div>
+  <div class="actions">
+    <button class="cancel" id="v-cancel">Cancel</button>
+    <button class="confirm" id="v-confirm" hidden>Add meeting</button>
+  </div>
+</div>
+
+<div class="toast" id="toast">
+  <div class="ic" id="t-ic">🔔</div>
+  <div class="tx"><b id="t-title">Meetings</b><p id="t-body"></p><small id="t-time">now</small></div>
+</div>
+
+<script>
+/* --- parse.js inlined for the single-file build --- */
+/* Shared voice-command parser.
+   Used by the app (in-app dictation) and by the server (Siri Shortcuts),
+   so both understand exactly the same phrasing. */
+(function (root) {
+  const WEEK = ['sunday', 'monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday'];
+  const MONTHS = ['january','february','march','april','may','june','july','august','september','october','november','december'];
+  const NUMWORD = { one:1,two:2,three:3,four:4,five:5,six:6,seven:7,eight:8,nine:9,ten:10,eleven:11,twelve:12,
+                    fifteen:15,twenty:20,thirty:30,forty:40,fortyfive:45,sixty:60,ninety:90 };
+
+  const pad = n => String(n).padStart(2, '0');
+  const isoDate = d => `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;
+
+  function parse(raw, now) {
+    now = now || new Date();
+    const original = (raw || '').trim();
+    let t = ' ' + original.toLowerCase().replace(/[.,!?]/g, ' ').replace(/\s+/g, ' ') + ' ';
+
+    /* ---------- intent ---------- */
+    if (/\b(what'?s|what is|whats|what are|when'?s|when is)\b[^]*\b(next|on|coming up|scheduled|my day|today|tomorrow|meetings?)\b/.test(t)
+        || /\b(what do i have|read (me )?my|my (day|schedule|meetings)|any meetings|list meetings|agenda|brief me)\b/.test(t)) {
+      const scope = /\btomorrow\b/.test(t) ? 'tomorrow'
+                  : /\b(next|coming up|after this)\b/.test(t) && !/\btoday\b/.test(t) ? 'next'
+                  : 'today';
+      return { intent: 'query', scope, text: original };
+    }
+    if (/\b(cancel|delete|remove|clear) (the |my )?(meeting|next meeting)\b/.test(t)) {
+      return { intent: 'cancel', text: original };
+    }
+
+    const eaten = [];
+    const eat = (re, fn) => {
+      const m = t.match(re);
+      if (m) { eaten.push(m[0]); t = t.replace(m[0], ' '); if (fn) fn(m); }
+      return m;
+    };
+
+    /* ---------- criticality ---------- */
+    let crit = 'standard';
+    eat(/\b(mission[- ]critical|critical|business critical)\b/, () => crit = 'critical');
+    if (crit === 'standard') eat(/\b(important|must attend|can'?t miss)\b/, () => crit = 'important');
+    if (crit === 'standard') eat(/\b(optional|skippable|nice to have|fyi only)\b/, () => crit = 'optional');
+
+    /* ---------- priority ---------- */
+    let pri = 3;
+    if (!eat(/\b(priority ?(one|two|three|four|1|2|3|4)|p ?([1-4])\b)/, m => {
+      const v = (m[2] || m[3] || '').toString();
+      pri = { one: 1, two: 2, three: 3, four: 4 }[v] || parseInt(v, 10) || 3;
+    })) {
+      eat(/\b(highest|top|urgent) priority\b/, () => pri = 1);
+      eat(/\bhigh priority\b/, () => pri = 2);
+      eat(/\blow priority\b/, () => pri = 4);
+    }
+    if (crit === 'critical' && pri === 3) pri = 1;
+
+    /* ---------- duration ---------- */
+    let dur = 30;
+    eat(/\bfor (an? |one )?(hour and a half|half an hour|hour|\d+(\.\d+)?|[a-z]+) ?(hours?|hrs?|minutes?|mins?)?\b/, m => {
+      const chunk = m[2];
+      if (chunk === 'half an hour') return dur = 30;
+      if (chunk === 'hour and a half') return dur = 90;
+      if (chunk === 'hour') return dur = 60;
+      const n = isNaN(parseFloat(chunk)) ? NUMWORD[chunk] : parseFloat(chunk);
+      if (!n) return;
+      const unit = m[4] || '';
+      dur = /hour|hr/.test(unit) || (!unit && n <= 4) ? Math.round(n * 60) : Math.round(n);
+    });
+
+    /* ---------- time ---------- */
+    let hh = null, mm = 0;
+    eat(/\b(?:at |from )?(\d{1,2})[:.](\d{2}) ?(am|pm)?\b/, m => {
+      hh = +m[1]; mm = +m[2];
+      if (m[3] === 'pm' && hh < 12) hh += 12;
+      if (m[3] === 'am' && hh === 12) hh = 0;
+    });
+    if (hh === null) eat(/\b(?:at |from )(\d{1,2}) ?(am|pm|o'?clock)?\b/, m => {
+      hh = +m[1];
+      if (m[2] === 'pm' && hh < 12) hh += 12;
+      else if (m[2] === 'am' && hh === 12) hh = 0;
+      else if (!m[2] && hh <= 7) hh += 12; // "at 4" almost always means the afternoon
+    });
+    if (hh === null) eat(/\b(noon|midday)\b/, () => hh = 12);
+    if (hh === null) eat(/\b(in (\d+) minutes|in (an|one|\d+) hours?)\b/, m => {
+      const d = new Date(now);
+      if (m[2]) d.setMinutes(d.getMinutes() + +m[2]);
+      else d.setHours(d.getHours() + (isNaN(+m[3]) ? 1 : +m[3]));
+      hh = d.getHours(); mm = d.getMinutes();
+    });
+
+    /* ---------- date ---------- */
+    let date = null;
+    eat(/\bday after tomorrow\b/, () => { const d = new Date(now); d.setDate(d.getDate() + 2); date = isoDate(d); });
+    if (!date) eat(/\btomorrow\b/, () => { const d = new Date(now); d.setDate(d.getDate() + 1); date = isoDate(d); });
+    if (!date) eat(/\b(today|this (morning|afternoon|evening))\b/, () => date = isoDate(now));
+    if (!date) eat(new RegExp('\\b(next |this |on |coming )?(' + WEEK.join('|') + ')\\b'), m => {
+      const target = WEEK.indexOf(m[2]);
+      const d = new Date(now);
+      let delta = (target - d.getDay() + 7) % 7;
+      if (delta === 0 || /next/.test(m[1] || '')) delta = delta === 0 ? 7 : delta;
+      d.setDate(d.getDate() + delta);
+      date = isoDate(d);
+    });
+    if (!date) eat(new RegExp('\\b(on |the )?(\\d{1,2})(st|nd|rd|th)? (of )?(' + MONTHS.join('|') + ')\\b'), m => {
+      const d = new Date(now.getFullYear(), MONTHS.indexOf(m[5]), +m[2]);
+      if (d < new Date(now.toDateString())) d.setFullYear(d.getFullYear() + 1);
+      date = isoDate(d);
+    });
+    if (!date) eat(new RegExp('\\b(' + MONTHS.join('|') + ') (\\d{1,2})(st|nd|rd|th)?\\b'), m => {
+      const d = new Date(now.getFullYear(), MONTHS.indexOf(m[1]), +m[2]);
+      if (d < new Date(now.toDateString())) d.setFullYear(d.getFullYear() + 1);
+      date = isoDate(d);
+    });
+
+    /* ---------- location ---------- */
+    let loc = '';
+    eat(/\b(on|over) (zoom|teams|google meet|meet|webex|slack|huddle|call|phone)\b/, m => loc = title(m[2]));
+    if (!loc) eat(/\b(in|at) (the )?(room [\w-]+|meeting room [\w-]+|[\w-]+ room|office|cafeteria|boardroom|hq)\b/, m => loc = title(m[3]));
+
+    /* ---------- title ---------- */
+    const kindM = t.match(/\b(sync|catch ?up|stand ?up|one[- ]on[- ]one|1:1|review|interview|demo|debrief|retro|kickoff)\b/);
+    const kind = kindM ? kindM[1] : '';
+    const withM = t.match(/\bwith ([\w' ]+?)(?:\s+(?:tomorrow|today|at|on|for|next|in|priority|p[1-4])\b|\s*$)/);
+    let name = t
+      .replace(/\b(add|create|schedule|set up|book|new|put in|make)\b/g, ' ')
+      .replace(/\b(a |an |the )?(meeting|event|appointment|call|sync|catch ?up|invite)\b/g, ' ')
+      .replace(/\b(with|called|named|titled|about|regarding|re|for|to discuss|on)\b/g, ' ')
+      .replace(/\b(my|me|please|reminder|calendar)\b/g, ' ')
+      .replace(/\s+/g, ' ').trim();
+    if (!name) {
+      const m = original.match(/\b(?:with|about|called|regarding)\s+(.+?)(?:\s+(?:tomorrow|today|at|on|for|next)\b|$)/i);
+      name = m ? m[1] : 'Meeting';
+    }
+    name = title(name);
+    if (kind && withM && !new RegExp(kind, 'i').test(name)) name = `${title(kind)} with ${title(withM[1].trim())}`;
+
+    /* ---------- fill the gaps ---------- */
+    if (hh === null) { const d = new Date(now.getTime() + 36e5); d.setMinutes(d.getMinutes() > 30 ? 60 : 30, 0, 0); hh = d.getHours(); mm = d.getMinutes(); }
+    if (!date) {
+      date = isoDate(now);
+      const slot = new Date(now); slot.setHours(hh, mm, 0, 0);
+      if (slot <= now) { const d = new Date(now); d.setDate(d.getDate() + 1); date = isoDate(d); }
+    }
+
+    return {
+      intent: 'create',
+      text: original,
+      meeting: { title: name || 'Meeting', date, time: `${pad(hh)}:${pad(mm)}`, dur, loc, pri, crit, notes: '' },
+      confidence: scoreOf(original, { hasTime: /\d|noon|o'clock/.test(original), hasDate: !!date })
+    };
+  }
+
+  function title(s) { return (s || '').replace(/\b\w/g, c => c.toUpperCase()).trim(); }
+  function scoreOf(text, f) {
+    let s = 0.4;
+    if (f.hasTime) s += 0.35;
+    if (/\b(tomorrow|today|monday|tuesday|wednesday|thursday|friday|saturday|sunday)\b/i.test(text)) s += 0.15;
+    if (text.split(' ').length > 4) s += 0.1;
+    return Math.min(1, s);
+  }
+
+  const api = { parse, isoDate };
+  if (typeof module !== 'undefined' && module.exports) module.exports = api;
+  root.VoiceParse = api;
+})(typeof self !== 'undefined' ? self : this);
+
+</script>
+<script>
+/* ============ state ============ */
+const KEY='meetings-v3';
+let state={meetings:[],fired:[],settings:{url:'',token:'',speak:false}};
+let swReg=null, pushOn=false;
+
+async function load(){
+  try{const r=await window.storage.get(KEY); if(r&&r.value) state={...state,...JSON.parse(r.value)};}catch(e){}
+  state.meetings=state.meetings||[]; state.fired=state.fired||[];
+  state.settings={url:'',token:'',speak:false,...(state.settings||{})};
+}
+async function save(){
+  try{await window.storage.set(KEY,JSON.stringify(state));}
+  catch(e){toast('⚠️','Not saved','Storage is unavailable, so changes last only until you close the app.');}
+}
+
+const PRI={1:{n:'P1',c:'var(--red)',hex:'#FF453A'},2:{n:'P2',c:'var(--orange)',hex:'#FF9F0A'},
+           3:{n:'P3',c:'var(--yellow)',hex:'#FFD60A'},4:{n:'P4',c:'var(--green)',hex:'#30D158'}};
+const CRIT={optional:{n:'Optional',offsets:[10,5]},standard:{n:'Standard',offsets:[10,5]},
+            important:{n:'Important',offsets:[10,5]},critical:{n:'Critical',offsets:[30,10,5,0]}};
+const start=m=>new Date(m.date+'T'+m.time);
+const endOf=m=>new Date(start(m).getTime()+m.dur*60000);
+const iso=d=>`${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
+const fmtT=d=>d.toLocaleTimeString([],{hour:'numeric',minute:'2-digit'});
+const forDay=k=>state.meetings.filter(m=>m.date===k).sort((a,b)=>a.time.localeCompare(b.time));
+const esc=s=>(s||'').replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+let selected=iso(new Date()), editingId=null, detailId=null, pri=3, crit='standard';
+
+/* ============ server sync ============ */
+const cfg=()=>state.settings;
+const hasServer=()=>!!(cfg().url&&cfg().token);
+async function api(path,opts={}){
+  if(!hasServer()) return null;
+  const r=await fetch(cfg().url.replace(/\/$/,'')+path,{
+    ...opts, headers:{'Content-Type':'application/json','Authorization':'Bearer '+cfg().token,...(opts.headers||{})}
+  });
+  if(!r.ok) throw new Error('Server said '+r.status);
+  return r.headers.get('content-type')?.includes('json')?r.json():r.text();
+}
+async function syncUp(m){ try{ await api('/api/meetings',{method:'POST',body:JSON.stringify({meeting:m})}); }catch(e){ note('Saved here, but the server didn’t pick it up: '+e.message); } }
+async function syncDel(id){ try{ await api('/api/meetings/'+id,{method:'DELETE'}); }catch(e){} }
+async function syncDown(){
+  try{
+    const list=await api('/api/meetings'); if(!Array.isArray(list)) return;
+    const ids=new Set(state.meetings.map(m=>m.id));
+    let added=0;
+    list.forEach(m=>{ if(!ids.has(m.id)){ state.meetings.push(m); added++; } });
+    if(added){ await save(); render(); if(list.some(m=>m.source==='siri')) note(added+' meeting'+(added>1?'s':'')+' arrived from Siri.'); }
+  }catch(e){}
+}
+
+/* ============ render ============ */
+function render(){
+  const now=new Date(), today=iso(now);
+  document.getElementById('eyebrow').textContent=now.toLocaleDateString([],{weekday:'long'})+' · '+fmtT(now);
+  const sd=new Date(selected+'T12:00');
+  const rel=selected===today?'Today':selected===iso(new Date(now.getTime()+864e5))?'Tomorrow':
+            selected===iso(new Date(now.getTime()-864e5))?'Yesterday':sd.toLocaleDateString([],{weekday:'long'});
+  document.getElementById('dayTitle').textContent=rel;
+  document.getElementById('daySub').textContent=sd.toLocaleDateString([],{day:'numeric',month:'long',year:'numeric'});
+
+  const strip=document.getElementById('strip'); strip.innerHTML='';
+  for(let i=-1;i<13;i++){
+    const d=new Date(now.getFullYear(),now.getMonth(),now.getDate()+i), k=iso(d);
+    const b=document.createElement('button'); b.className='day'+(k===selected?' sel':'');
+    const pips=forDay(k).slice(0,4).map(m=>`<i style="background:${PRI[m.pri].c}"></i>`).join('');
+    b.innerHTML=`<span>${d.toLocaleDateString([],{weekday:'short'}).slice(0,3)}</span><b>${d.getDate()}</b><div class="pips">${pips}</div>`;
+    b.onclick=()=>{selected=k;render();};
+    strip.appendChild(b);
+  }
+  strip.querySelector('.sel')?.scrollIntoView({block:'nearest',inline:'center',behavior:'smooth'});
+  renderNext();
+
+  const day=forDay(selected);
+  document.getElementById('listTitle').textContent=selected===today?'Today’s schedule':'Schedule';
+  document.getElementById('listCount').textContent=day.length?`${day.length} meeting${day.length>1?'s':''}`:'';
+  const list=document.getElementById('list');
+  if(!day.length){
+    list.innerHTML=`<div class="empty"><b>Nothing scheduled</b><p>Add a meeting by hand or by voice — you'll be alerted 10 and 5 minutes before it starts.</p></div>`;
+    return;
+  }
+  list.innerHTML='<div class="rows"></div>';
+  const rows=list.firstChild;
+  day.forEach(m=>{
+    const s=start(m), past=endOf(m)<now, parts=fmtT(s).split(' ');
+    const b=document.createElement('button'); b.className='row'+(past?' past':'');
+    b.innerHTML=`<div class="time">${parts[0]}<small>${parts[1]||''} · ${m.dur}m</small></div>
+      <div class="bar" style="background:${PRI[m.pri].c}"></div>
+      <div class="body"><h4>${esc(m.title)}</h4>${m.loc?`<div class="meta">${esc(m.loc)}</div>`:''}
+      <div class="tags"><span class="tag pri" style="background:${PRI[m.pri].c}">${PRI[m.pri].n}</span>
+      <span class="tag${m.crit==='critical'?' crit':''}">${CRIT[m.crit].n}</span>
+      ${m.source?`<span class="tag mic">${m.source==='siri'?'Siri':'Voice'}</span>`:''}</div></div><div class="chev">›</div>`;
+    b.onclick=()=>openDetail(m.id);
+    rows.appendChild(b);
+  });
+}
+
+function renderNext(){
+  const now=Date.now();
+  const up=state.meetings.filter(m=>endOf(m).getTime()>now).sort((a,b)=>start(a)-start(b))[0];
+  const wrap=document.getElementById('nextWrap');
+  if(!up){wrap.innerHTML='';return;}
+  const s=start(up).getTime(), mins=(s-now)/60000, live=mins<=0;
+  const pct=Math.max(0,Math.min(1,1-mins/60)), C=2*Math.PI*33;
+  const h=Math.floor(Math.abs(mins)/60), mm=Math.floor(Math.abs(mins)%60);
+  const big=live?'Now':h>0?`${h}h ${mm}m`:`${Math.max(0,Math.ceil(mins))}m`;
+  const nextAlert=CRIT[up.crit].offsets.filter(o=>s-o*60000>now).pop();
+  const alertTxt=live?'In progress':nextAlert===undefined?'Alerts sent':
+    nextAlert===0?'Final alert at start time':`Next alert ${nextAlert} min before · ${fmtT(new Date(s-nextAlert*60000))}`;
+  wrap.innerHTML=`<div class="next"><div class="glow" style="background:${PRI[up.pri].c}"></div>
+    <div class="next-row"><div class="ring">
+      <svg width="78" height="78"><circle cx="39" cy="39" r="33" stroke="rgba(255,255,255,.1)" stroke-width="5" fill="none"></circle>
+      <circle cx="39" cy="39" r="33" stroke="${PRI[up.pri].c}" stroke-width="5" fill="none" stroke-linecap="round"
+        stroke-dasharray="${C}" stroke-dashoffset="${C*(1-pct)}"></circle></svg>
+      <div class="cd"><b>${big}</b><span>${live?'started':'to go'}</span></div></div>
+    <div style="flex:1;min-width:0"><div class="eyebrow">Next up</div><h2>${esc(up.title)}</h2>
+      <div class="when">${up.date===iso(new Date())?'Today':new Date(up.date+'T12:00').toLocaleDateString([],{weekday:'short',day:'numeric',month:'short'})} · ${fmtT(start(up))}${up.loc?' · '+esc(up.loc):''}</div>
+    </div></div>
+    <div class="alertline"><span class="dot${live?' live':''}" style="background:${PRI[up.pri].c}"></span>${alertTxt}</div></div>`;
+}
+
+/* ============ sheets ============ */
+const scrim=document.getElementById('scrim'), sheet=document.getElementById('sheet'),
+      detail=document.getElementById('detail'), settings=document.getElementById('settings');
+function closeAll(){[sheet,detail,settings].forEach(s=>s.classList.remove('on'));scrim.classList.remove('on');}
+scrim.onclick=closeAll;
+['cancel','d-close','s-close'].forEach(id=>document.getElementById(id).onclick=closeAll);
+
+function openSheet(m){
+  editingId=m?m.id:null;
+  document.getElementById('sheetTitle').textContent=m?'Edit meeting':'New meeting';
+  document.getElementById('f-title').value=m?m.title:'';
+  document.getElementById('f-date').value=m?m.date:selected;
+  document.getElementById('f-time').value=m?m.time:defaultTime();
+  document.getElementById('f-dur').value=m?m.dur:30;
+  document.getElementById('f-loc').value=m?m.loc||'':'';
+  document.getElementById('f-notes').value=m?m.notes||'':'';
+  pri=m?m.pri:3; crit=m?m.crit:'standard';
+  setSeg('seg-pri',pri+''); setSeg('seg-crit',crit);
+  scrim.classList.add('on'); sheet.classList.add('on');
+}
+function defaultTime(){const d=new Date(Date.now()+36e5);d.setMinutes(d.getMinutes()>30?60:30,0,0);
+  return String(d.getHours()).padStart(2,'0')+':'+String(d.getMinutes()).padStart(2,'0');}
+function setSeg(id,v){document.querySelectorAll('#'+id+' button').forEach(b=>b.classList.toggle('on',b.dataset.v===v));}
+document.getElementById('seg-pri').onclick=e=>{const b=e.target.closest('button');if(!b)return;pri=+b.dataset.v;setSeg('seg-pri',b.dataset.v);};
+document.getElementById('seg-crit').onclick=e=>{const b=e.target.closest('button');if(!b)return;crit=b.dataset.v;setSeg('seg-crit',crit);
+  document.getElementById('critHint').textContent=crit==='critical'
+    ?'Alerts at 30, 10 and 5 minutes before, plus a nudge at start time.'
+    :'Alerts at 10 and 5 minutes before the meeting starts.';};
+document.getElementById('fab').onclick=()=>openSheet(null);
+
+async function commit(m){
+  if(editingId){state.meetings=state.meetings.map(x=>x.id===editingId?m:x);}
+  else state.meetings.push(m);
+  state.fired=state.fired.filter(k=>!k.startsWith(m.id+':'));
+  selected=m.date; await save(); render(); handOff();
+  if(hasServer()) syncUp(m);
+}
+document.getElementById('save').onclick=async()=>{
+  const t=document.getElementById('f-title').value.trim();
+  const d=document.getElementById('f-date').value, tm=document.getElementById('f-time').value;
+  if(!t||!d||!tm){toast('⚠️','Missing details','Add a name, a date and a start time to save this meeting.');return;}
+  const m={id:editingId||('m'+Date.now()),title:t,date:d,time:tm,dur:+document.getElementById('f-dur').value,
+    loc:document.getElementById('f-loc').value.trim(),notes:document.getElementById('f-notes').value.trim(),pri,crit};
+  await commit(m); closeAll();
+  toast('✅','Meeting saved',`${t} — ${fmtT(start(m))}. Alerts ${CRIT[crit].offsets.filter(o=>o).join(' and ')} minutes before.`);
+};
+
+function openDetail(id){
+  const m=state.meetings.find(x=>x.id===id); if(!m)return; detailId=id;
+  document.getElementById('d-title').textContent=m.title;
+  document.getElementById('d-when').textContent=new Date(m.date+'T12:00').toLocaleDateString([],{weekday:'long',day:'numeric',month:'long'})+' · '+fmtT(start(m))+' – '+fmtT(endOf(m));
+  document.getElementById('d-kv').innerHTML=`
+    <div><span>Priority</span><b style="color:${PRI[m.pri].c}">${PRI[m.pri].n}</b></div>
+    <div><span>Criticality</span><b>${CRIT[m.crit].n}</b></div>
+    <div><span>Where</span><b>${esc(m.loc)||'—'}</b></div>
+    <div><span>Alerts</span><b>${CRIT[m.crit].offsets.map(o=>o===0?'at start':o+' min').join(', ')}</b></div>
+    ${m.source?`<div><span>Added by</span><b>${m.source==='siri'?'Siri':'Voice'}</b></div>`:''}`;
+  document.getElementById('d-notes-wrap').hidden=!m.notes;
+  document.getElementById('d-notes').textContent=m.notes||'';
+  scrim.classList.add('on'); detail.classList.add('on');
+}
+document.getElementById('d-edit').onclick=()=>{const m=state.meetings.find(x=>x.id===detailId);detail.classList.remove('on');setTimeout(()=>openSheet(m),120);};
+document.getElementById('d-del').onclick=async()=>{
+  state.meetings=state.meetings.filter(x=>x.id!==detailId);
+  state.fired=state.fired.filter(k=>!k.startsWith(detailId+':'));
+  await save(); closeAll(); render(); handOff(); syncDel(detailId);
+};
+
+/* ============ notifications ============ */
+function syncPerm(){
+  const box=document.getElementById('perm');
+  if(!('Notification' in window)){
+    box.hidden=false;
+    document.getElementById('permTitle').textContent='Alerts stay inside the app';
+    document.getElementById('permBody').textContent='This browser can’t post system notifications, so alerts appear as banners here.';
+    document.getElementById('permBtn').hidden=true;
+    document.getElementById('s-perm').textContent='Not available in this browser';
+    return;
+  }
+  const g=Notification.permission==='granted';
+  box.hidden=g;
+  document.getElementById('s-perm').textContent=g?'On — alerts mirror to a paired Apple Watch':
+    Notification.permission==='denied'?'Blocked in iOS Settings › Notifications':'Not set up yet';
+  document.getElementById('s-permBtn').classList.toggle('on',g);
+  document.getElementById('s-permBtn').textContent=g?'On':'Turn on';
+}
+async function askPerm(){
+  try{await Notification.requestPermission();}catch(e){}
+  syncPerm();
+  if(Notification.permission==='granted'){
+    toast('🔔','Alerts are on','Meeting alerts will appear on your phone — and on your Apple Watch when the phone is locked.');
+    if(hasServer()) subscribePush();
+  }
+}
+document.getElementById('permBtn').onclick=askPerm;
+document.getElementById('s-permBtn').onclick=askPerm;
+
+function post(title,body,color,sticky){
+  try{
+    if(swReg&&swReg.showNotification&&Notification.permission==='granted'){
+      swReg.showNotification(title,{body,tag:title,requireInteraction:!!sticky,vibrate:[200,80,200]});
+    }else if('Notification' in window&&Notification.permission==='granted'){
+      const n=new Notification(title,{body,tag:title}); setTimeout(()=>n.close(),25000);
+    }
+  }catch(e){}
+  if(navigator.vibrate) navigator.vibrate([200,80,200]);
+  beep(); toast('🔔',title,body,color);
+}
+let toastTimer;
+function toast(ic,title,body,color){
+  document.getElementById('t-ic').textContent=ic;
+  document.getElementById('t-ic').style.background=color||'var(--blue)';
+  document.getElementById('t-title').textContent=title;
+  document.getElementById('t-body').textContent=body;
+  document.getElementById('t-time').textContent=fmtT(new Date());
+  const el=document.getElementById('toast'); el.classList.add('on');
+  clearTimeout(toastTimer); toastTimer=setTimeout(()=>el.classList.remove('on'),6000);
+  el.onclick=()=>el.classList.remove('on');
+}
+const note=t=>toast('ℹ️','Meetings',t);
+let ac;
+function beep(){
+  try{
+    ac=ac||new (window.AudioContext||window.webkitAudioContext)();
+    [0,.18].forEach((t,i)=>{
+      const o=ac.createOscillator(),g=ac.createGain();
+      o.frequency.value=i?988:784;o.type='sine';
+      g.gain.setValueAtTime(.0001,ac.currentTime+t);
+      g.gain.exponentialRampToValueAtTime(.22,ac.currentTime+t+.02);
+      g.gain.exponentialRampToValueAtTime(.0001,ac.currentTime+t+.32);
+      o.connect(g);g.connect(ac.destination);o.start(ac.currentTime+t);o.stop(ac.currentTime+t+.34);
+    });
+  }catch(e){}
+}
+
+async function tick(){
+  const now=Date.now(); let changed=false;
+  state.meetings.forEach(m=>{
+    const s=start(m).getTime();
+    (CRIT[m.crit]||CRIT.standard).offsets.forEach(off=>{
+      const at=s-off*60000, key=m.id+':'+off;
+      if(now>=at&&now<at+120000&&!state.fired.includes(key)){
+        state.fired.push(key); changed=true;
+        const head=off===0?`${m.title} starts now`:`${m.title} in ${off} minutes`;
+        const bits=[fmtT(start(m)),PRI[m.pri].n,CRIT[m.crit].n]; if(m.loc)bits.splice(1,0,m.loc);
+        post(head,bits.join(' · '),PRI[m.pri].hex,m.crit==='critical');
+      }
+    });
+  });
+  if(changed){state.fired=state.fired.slice(-300);await save();}
+  renderNext();
+}
+
+/* hand the next half hour of alerts to the service worker before we lose the page */
+function handOff(){
+  if(!swReg||!swReg.active) return;
+  const now=Date.now(), alerts=[];
+  state.meetings.forEach(m=>{
+    const s=start(m).getTime();
+    (CRIT[m.crit]||CRIT.standard).offsets.forEach(off=>{
+      const at=s-off*60000, key=m.id+':'+off;
+      if(at>now&&at-now<18e5&&!state.fired.includes(key))
+        alerts.push({key,at,id:m.id,offset:off,sticky:m.crit==='critical',
+          title:off===0?`${m.title} starts now`:`${m.title} in ${off} minutes`,
+          body:[fmtT(start(m)),m.loc,PRI[m.pri].n,CRIT[m.crit].n].filter(Boolean).join(' · ')});
+    });
+  });
+  swReg.active.postMessage({type:'schedule',alerts});
+}
+
+/* ============ push ============ */
+const b64=s=>{const p='='.repeat((4-s.length%4)%4);const r=(s+p).replace(/-/g,'+').replace(/_/g,'/');
+  const raw=atob(r);return Uint8Array.from([...raw].map(c=>c.charCodeAt(0)));};
+async function subscribePush(){
+  const st=document.getElementById('s-status');
+  try{
+    if(!swReg) throw new Error('The service worker isn’t running. Open the app from your Home Screen over HTTPS.');
+    if(!hasServer()) throw new Error('Add the server address and token first.');
+    if(Notification.permission!=='granted') await Notification.requestPermission();
+    const {key}=await api('/api/vapid');
+    const sub=await swReg.pushManager.getSubscription()
+      ||await swReg.pushManager.subscribe({userVisibleOnly:true,applicationServerKey:b64(key)});
+    const r=await api('/api/subscribe',{method:'POST',body:JSON.stringify({subscription:sub})});
+    pushOn=true;
+    document.getElementById('s-push').textContent=`On — ${r.devices} device${r.devices>1?'s':''} registered`;
+    document.getElementById('s-pushBtn').classList.add('on');
+    document.getElementById('s-pushBtn').textContent='On';
+    st.textContent='Closed-app alerts are live. Lock your phone and the alert lands on your Watch.';
+    state.meetings.forEach(syncUp);
+  }catch(e){
+    st.textContent=e.message;
+    document.getElementById('s-push').textContent='Not connected';
+  }
+}
+document.getElementById('s-pushBtn').onclick=subscribePush;
+document.getElementById('s-save').onclick=async()=>{
+  state.settings.url=document.getElementById('s-url').value.trim();
+  state.settings.token=document.getElementById('s-token').value.trim();
+  await save(); await subscribePush(); syncDown();
+};
+document.getElementById('s-test').onclick=async()=>{
+  try{const r=await api('/api/test',{method:'POST',body:'{}'});
+    document.getElementById('s-status').textContent=`Test sent to ${r.devices} device(s). Lock the phone to see it on your Watch.`;}
+  catch(e){document.getElementById('s-status').textContent='Could not reach the server: '+e.message;}
+};
+document.getElementById('s-speakBtn').onclick=async()=>{
+  state.settings.speak=!state.settings.speak; await save(); paintSettings();
+};
+function paintSettings(){
+  document.getElementById('s-url').value=cfg().url;
+  document.getElementById('s-token').value=cfg().token;
+  const b=document.getElementById('s-speakBtn');
+  b.textContent=cfg().speak?'On':'Off'; b.classList.toggle('on',cfg().speak);
+}
+document.getElementById('gear').onclick=()=>{paintSettings();syncPerm();scrim.classList.add('on');settings.classList.add('on');};
+
+/* ============ voice ============ */
+const SR=window.SpeechRecognition||window.webkitSpeechRecognition;
+const vBox=document.getElementById('voice'), vText=document.getElementById('v-text'),
+      vStatus=document.getElementById('v-status'), vPrev=document.getElementById('v-preview'),
+      vConfirm=document.getElementById('v-confirm'), vTyped=document.getElementById('v-typed'),
+      wave=document.getElementById('wave');
+let rec=null, pending=null, waveTimer=null;
+for(let i=0;i<26;i++) wave.appendChild(document.createElement('i'));
+
+function openVoice(){
+  pending=null; vPrev.innerHTML=''; vConfirm.hidden=true;
+  document.getElementById('v-examples').hidden=false;
+  vText.innerHTML='<i>Say something like “meeting with finance tomorrow at 3 pm, priority 1, critical”</i>';
+  vBox.classList.add('on');
+  if(SR) startRec(); else{
+    vStatus.textContent='Type it instead';
+    vTyped.hidden=false; vTyped.value=''; vTyped.focus();
+    vText.innerHTML='<i>Speech recognition isn’t available in this browser. Type the same command and it works identically.</i>';
+  }
+}
+function closeVoice(){ vBox.classList.remove('on'); stopRec(); }
+document.getElementById('micBtn').onclick=openVoice;
+document.getElementById('v-cancel').onclick=closeVoice;
+
+function animateWave(on){
+  clearInterval(waveTimer);
+  const bars=[...wave.children];
+  if(!on){bars.forEach(b=>b.style.height='8px');return;}
+  waveTimer=setInterval(()=>bars.forEach((b,i)=>{
+    b.style.height=(8+Math.abs(Math.sin(Date.now()/220+i/2))*Math.random()*34)+'px';
+  }),110);
+}
+function startRec(){
+  try{
+    rec=new SR();
+    rec.lang=navigator.language||'en-IN';
+    rec.interimResults=true; rec.continuous=false; rec.maxAlternatives=1;
+    vStatus.textContent='Listening'; animateWave(true);
+    rec.onresult=e=>{
+      let txt='';
+      for(let i=0;i<e.results.length;i++) txt+=e.results[i][0].transcript;
+      vText.textContent=txt;
+      document.getElementById('v-examples').hidden=true;
+      if(e.results[e.results.length-1].isFinal) handleCommand(txt);
+    };
+    rec.onerror=e=>{
+      animateWave(false);
+      vStatus.textContent='Didn’t catch that';
+      vText.innerHTML=e.error==='not-allowed'
+        ?'<i>Microphone access is off. Turn it on in Settings › Safari › Microphone, or type the command below.</i>'
+        :'<i>Nothing came through. Tap the mic again, or type the command below.</i>';
+      vTyped.hidden=false;
+    };
+    rec.onend=()=>{animateWave(false); if(!pending) vStatus.textContent='Tap to try again';};
+    rec.start();
+  }catch(e){ vTyped.hidden=false; vStatus.textContent='Type it instead'; }
+}
+function stopRec(){ animateWave(false); try{rec&&rec.stop();}catch(e){} }
+vText.onclick=()=>{ if(SR&&!pending){stopRec();startRec();} };
+vTyped.onkeydown=e=>{ if(e.key==='Enter'&&vTyped.value.trim()) handleCommand(vTyped.value.trim()); };
+
+function speak(t){
+  if(!cfg().speak||!('speechSynthesis' in window)) return;
+  try{const u=new SpeechSynthesisUtterance(t);u.rate=1.02;speechSynthesis.speak(u);}catch(e){}
+}
+
+function handleCommand(text){
+  stopRec();
+  const r=VoiceParse.parse(text,new Date());
+  document.getElementById('v-examples').hidden=true;
+
+  if(r.intent==='query'){
+    const key=r.scope==='tomorrow'?iso(new Date(Date.now()+864e5)):iso(new Date());
+    let answer;
+    if(r.scope==='next'){
+      const n=state.meetings.filter(m=>endOf(m).getTime()>Date.now()).sort((a,b)=>start(a)-start(b))[0];
+      answer=n?`Next up: ${n.title} at ${fmtT(start(n))}${n.loc?', '+n.loc:''}. ${PRI[n.pri].n}, ${CRIT[n.crit].n}.`:'Nothing scheduled.';
+    }else{
+      const l=forDay(key);
+      answer=l.length
+        ?`${l.length} meeting${l.length>1?'s':''} ${r.scope==='tomorrow'?'tomorrow':'today'}. `+l.map(m=>`${fmtT(start(m))} ${m.title}`).join(', ')+'.'
+        :`Nothing scheduled ${r.scope==='tomorrow'?'tomorrow':'today'}.`;
+    }
+    vStatus.textContent='Your schedule';
+    vText.textContent=answer; speak(answer);
+    selected=key; render();
+    setTimeout(closeVoice,4200);
+    return;
+  }
+
+  if(r.intent==='cancel'){
+    const n=state.meetings.filter(m=>start(m).getTime()>Date.now()).sort((a,b)=>start(a)-start(b))[0];
+    if(!n){vText.textContent='Nothing upcoming to cancel.';setTimeout(closeVoice,2500);return;}
+    pending={cancel:n};
+    vStatus.textContent='Cancel this?';
+    vPrev.innerHTML=`<div class="preview"><h4>${esc(n.title)}</h4><p>${new Date(n.date+'T12:00').toLocaleDateString([],{weekday:'long',day:'numeric',month:'short'})} · ${fmtT(start(n))}</p></div>`;
+    vConfirm.textContent='Cancel meeting'; vConfirm.hidden=false;
+    return;
+  }
+
+  const m=r.meeting; m.id='m'+Date.now(); m.source='voice';
+  pending={meeting:m};
+  vStatus.textContent=r.confidence>.75?'Got it':'Check this before saving';
+  vPrev.innerHTML=`<div class="preview">
+    <h4>${esc(m.title)}</h4>
+    <p>${new Date(m.date+'T12:00').toLocaleDateString([],{weekday:'long',day:'numeric',month:'short'})} · ${fmtT(start(m))} · ${m.dur} min${m.loc?' · '+esc(m.loc):''}</p>
+    <div class="tags"><span class="tag pri" style="background:${PRI[m.pri].c}">${PRI[m.pri].n}</span>
+    <span class="tag${m.crit==='critical'?' crit':''}">${CRIT[m.crit].n}</span>
+    <span class="tag">Alerts ${CRIT[m.crit].offsets.filter(o=>o).join(', ')} min before</span></div></div>`;
+  vConfirm.textContent='Add meeting'; vConfirm.hidden=false;
+  speak(`${m.title}, ${fmtT(start(m))}. Add it?`);
+}
+
+vConfirm.onclick=async()=>{
+  if(!pending) return;
+  if(pending.cancel){
+    const id=pending.cancel.id;
+    state.meetings=state.meetings.filter(x=>x.id!==id);
+    await save(); render(); syncDel(id); closeVoice();
+    toast('🗑️','Meeting cancelled',pending.cancel.title); pending=null; return;
+  }
+  const m=pending.meeting; editingId=null;
+  await commit(m); closeVoice(); pending=null;
+  toast('🎙️','Added by voice',`${m.title} — ${fmtT(start(m))}. Alerts ${CRIT[m.crit].offsets.filter(o=>o).join(' and ')} minutes before.`,'#BF5AF2');
+};
+
+/* ============ boot ============ */
+(async()=>{
+  await load(); syncPerm(); paintSettings(); render();
+
+  if('serviceWorker' in navigator&&location.protocol==='https:'){
+    try{
+      swReg=await navigator.serviceWorker.register('./sw.js');
+      await navigator.serviceWorker.ready;
+      handOff();
+      if(hasServer()) subscribePush();
+    }catch(e){ document.getElementById('s-status').textContent='Service worker didn’t start: '+e.message; }
+  }else{
+    document.getElementById('s-push').textContent='Needs HTTPS and a Home Screen install';
+  }
+
+  if(new URLSearchParams(location.search).get('action')==='voice') setTimeout(openVoice,350);
+
+  setInterval(tick,10000); tick();
+  setInterval(()=>{render();handOff();},60000);
+  if(hasServer()){ syncDown(); setInterval(syncDown,60000); }
+  document.addEventListener('visibilitychange',()=>{ if(!document.hidden){render();tick();syncDown();} });
+  window.addEventListener('pagehide',handOff);
+})();
+</script>
+</body>
+</html>

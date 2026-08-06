@@ -1,0 +1,18 @@
+{
+  "name": "Meetings",
+  "short_name": "Meetings",
+  "description": "Meeting alerts that reach you on your phone and watch.",
+  "start_url": "./",
+  "scope": "./",
+  "display": "standalone",
+  "background_color": "#000000",
+  "theme_color": "#000000",
+  "orientation": "portrait",
+  "shortcuts": [
+    {
+      "name": "Add by voice",
+      "short_name": "Voice",
+      "url": "./?action=voice"
+    }
+  ]
+}
